@@ -4,7 +4,7 @@ plugins {
 }
 
 group = 'ru.markshep'
-version = '1.0'
+version = '1.0.2'
 
 repositories {
     mavenCentral()
@@ -25,4 +25,72 @@ test {
 application {
     mainClass = 'ru.markshep.Main'
     applicationDefaultJvmArgs = ['--enable-native-access=ALL-UNNAMED']
+}
+
+def jpackageLauncher = javaToolchains.launcherFor {
+    languageVersion = JavaLanguageVersion.of(25)
+}
+def jpackageExe = jpackageLauncher.map {
+    it.metadata.installationPath.file('bin/jpackage.exe').asFile.absolutePath
+}
+def jpackageDir = layout.buildDirectory.dir('jpackage')
+def appLibDir = layout.buildDirectory.dir("install/${rootProject.name}/lib")
+
+def jpackageCommonArgs = { ->
+    [
+        '--name', rootProject.name,
+        '--app-version', project.version.toString(),
+        '--vendor', 'Markshep',
+        '--input', appLibDir.get().asFile.absolutePath,
+        '--main-jar', jar.archiveFileName.get(),
+        '--main-class', application.mainClass.get(),
+        '--java-options', '--enable-native-access=ALL-UNNAMED',
+        '--java-options', '-Dfile.encoding=UTF-8',
+        '--win-console',
+        '--add-modules', 'java.base,java.logging,jdk.jfr,jdk.unsupported,jdk.charsets',
+        '--jlink-options', '--strip-debug --no-man-pages --no-header-files --compress=zip-9',
+    ]
+}
+
+tasks.register('jpackageImage', Exec) {
+    group = 'distribution'
+    description = 'Собирает папку с SeedOfColors.exe и встроенной Java'
+    dependsOn installDist
+    def imageDir = jpackageDir.map { it.dir(rootProject.name) }
+    outputs.dir(imageDir)
+    doFirst {
+        imageDir.get().asFile.deleteDir()
+        executable = jpackageExe.get()
+        args(['--type', 'app-image', '--dest', jpackageDir.get().asFile.absolutePath] + jpackageCommonArgs())
+    }
+}
+
+tasks.register('packageApp', Zip) {
+    group = 'distribution'
+    description = 'Упаковывает exe со встроенной Java в zip'
+    dependsOn 'jpackageImage'
+    from(jpackageDir) { include "${rootProject.name}/**" }
+    archiveFileName = "${rootProject.name}-${project.version}-windows.zip"
+    destinationDirectory = layout.buildDirectory.dir('dist')
+}
+
+tasks.register('packageMsi', Exec) {
+    group = 'distribution'
+    description = 'Собирает установщик .msi (нужен WiX Toolset)'
+    dependsOn installDist
+    def msiDir = layout.buildDirectory.dir('dist')
+    outputs.dir(msiDir)
+    doFirst {
+        def msi = msiDir.get().file("${rootProject.name}-${project.version}.msi").asFile
+        msi.delete()
+        executable = jpackageExe.get()
+        args(['--type', 'msi', '--dest', msiDir.get().asFile.absolutePath] + jpackageCommonArgs() + [
+            '--description', 'Seed of Colors - turns text into a seed and a color',
+            '--win-menu', '--win-menu-group', rootProject.name,
+            '--win-shortcut',
+            '--win-dir-chooser',
+            '--win-per-user-install',
+            '--win-upgrade-uuid', 'b7c1f2a4-6e3d-4c8b-9a51-3f0d2e7c8a19',
+        ])
+    }
 }
