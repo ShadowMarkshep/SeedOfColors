@@ -9,8 +9,7 @@ public class JavaPolynomial implements HashAlgorithm {
         long hash = 0;
         char[] word = string.toCharArray();
         for (char c : word) {
-            hash += c;
-            hash *= CONST;
+            hash = hash * CONST + c;
         }
         return hash;
     }
