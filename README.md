@@ -18,7 +18,7 @@
 |---|---|---|
 | Java polynomial | `JavaPolynomial` | Полиномиальный хэш с множителем `31`, как в `String.hashCode()` |
 | TikTok polynomial | `TiktokPolynomial` | Полиномиальный хэш с множителем `425267` |
-| FNV-1a | `FNV_1a` | Fowler–Noll–Vo 1a *(в разработке)* |
+| FNV-1a | `Fnv1a` | 64-битный Fowler–Noll–Vo 1a по байтам UTF-8 |
 
 Все алгоритмы реализуют один интерфейс:
 
@@ -46,17 +46,38 @@ public class MyHash implements HashAlgorithm {
 }
 ```
 
-## Требования
+## Установка (Windows)
+
+Готовые сборки лежат на странице [Releases](https://github.com/ShadowMarkshep/SeedOfColors/releases/latest). Java ставить не нужно — она уже встроена в сборку.
+
+**Вариант 1 — установщик `.msi`**
+
+1. Скачайте `SeedOfColors-<версия>.msi`.
+2. Запустите и выберите папку установки (права администратора не нужны — ставится для текущего пользователя).
+3. Запускайте через ярлык на рабочем столе или из меню «Пуск» → *SeedOfColors*.
+
+Новые версии ставятся поверх старой, удалить программу можно через «Параметры → Приложения».
+
+**Вариант 2 — портативный `.zip`**
+
+1. Скачайте `SeedOfColors-<версия>-windows.zip` и распакуйте в любую папку.
+2. Запустите `SeedOfColors\SeedOfColors.exe`.
+
+> Для корректного отображения цветов лучше запускать в [Windows Terminal](https://aka.ms/terminal) — нужен терминал с поддержкой true color.
+
+## Сборка из исходников
+
+### Требования
 
 - JDK 25 или новее
-- Терминал с поддержкой true color (для корректного отображения цветов)
+- Терминал с поддержкой true color
 
 Gradle ставить не нужно — используется Gradle Wrapper.
 
-## Запуск
+### Запуск
 
 ```bash
-git clone https://github.com/Markshep/SeedOfColors.git
+git clone https://github.com/ShadowMarkshep/SeedOfColors.git
 cd SeedOfColors
 
 # Linux / macOS
@@ -66,12 +87,18 @@ cd SeedOfColors
 gradlew.bat run
 ```
 
-Сборка дистрибутива со скриптами запуска:
+### Сборка дистрибутивов
 
-```bash
-./gradlew installDist
-./build/install/SeedOfColors/bin/SeedOfColors
-```
+| Задача | Результат |
+|---|---|
+| `gradlew installDist` | `build/install/SeedOfColors/` — jar-файлы и скрипты запуска (нужна установленная Java) |
+| `gradlew jpackageImage` | `build/jpackage/SeedOfColors/` — `SeedOfColors.exe` со встроенной урезанной Java |
+| `gradlew packageApp` | `build/dist/SeedOfColors-<версия>-windows.zip` — то же самое, упакованное в zip |
+| `gradlew packageMsi` | `build/dist/SeedOfColors-<версия>.msi` — установщик |
+
+Задачи `jpackageImage`, `packageApp` и `packageMsi` работают только на Windows и используют `jpackage` из JDK 25 (Gradle найдёт его через toolchains). Для `packageMsi` дополнительно нужен [WiX Toolset](https://wixtoolset.org/), доступный в `PATH`.
+
+Версия берётся из `version` в `build.gradle`.
 
 ## Лицензия
 
