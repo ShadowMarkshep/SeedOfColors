@@ -12,8 +12,7 @@ public final class ColorUtil {
     }
 
     public static HSV hsvFromHash(long hash) {
-        int hue = (int) ((hash >>> 48) % 360);
-        return new HSV(hue, SATURATION, VALUE);
+        return new HSV(hueFromHash(hash), SATURATION, VALUE);
     }
 
     public static RGB toRgb(HSV hsv) {
@@ -48,8 +47,11 @@ public final class ColorUtil {
         return Math.round(value * 255);
     }
 
+    /** Сворачиваем все 64 бита, чтобы короткие строки не слипались в оттенок 0°. */
     public static int hueFromHash(long hash) {
-        return (int) ((hash >>> 48) % 360);
+        long folded = hash ^ (hash >>> 32);
+        folded ^= folded >>> 16;
+        return (int) Long.remainderUnsigned(folded, 360);
     }
 
     public static RGB rgbFromHue(int hue) {
